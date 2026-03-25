@@ -1,174 +1,406 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SÓNICA</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
-
-<style>
-
-/* BASE */
-body{
-  margin:0;
-  background:#050508;
-  color:#fff;
-  font-family:'Space Grotesk', sans-serif;
-}
-
-/* HERO */
-.hero{
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  text-align:center;
-}
-
-.hero h1{
-  font-family:'Bebas Neue';
-  font-size:120px;
-  margin:0;
-  background:linear-gradient(orange,yellow);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-}
-
-.hero p{
-  color:#aaa;
-  max-width:600px;
-}
-
-/* RUBENS */
-.rubens-main{
-  padding:60px 20px;
-  text-align:center;
-}
-
-#tube{
-  display:flex;
-  justify-content:center;
-  align-items:flex-end;
-  gap:4px;
-  height:140px;
-  margin-top:30px;
-  background:#111;
-  padding:15px;
-  border-radius:12px;
-}
-
-.flame{
-  width:6px;
-  height:20px;
-  background:orange;
-  border-radius:2px;
-  transition:all 0.1s linear;
-}
-
-/* BOTON */
-button{
-  padding:12px 25px;
-  background:orange;
-  border:none;
-  color:#000;
-  font-weight:bold;
-  cursor:pointer;
-  border-radius:6px;
-  margin-top:20px;
-}
-
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SÓNICA - Donde el sonido se vuelve visible</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Bebas+Neue&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<!-- HERO -->
-<section class="hero">
-  <h1>SÓNICA</h1>
-  <p>Una experiencia multisensorial donde la física del sonido se convierte en fuego.</p>
-</section>
+<style>
+  :root {
+    --fire: #FF4B12;
+    --ember: #FF8C00;
+    --plasma: #FFD700;
+    --ether: #00BFFF;
+    --void: #050508;
+    --smoke: #1a1a24;
+    --mist: #2d2d3e;
+    --ash: #6b6b85;
+    --ghost: #b0b0c8;
+    --white: #f0f0f8;
+  }
 
-<!-- RUBENS -->
-<section class="rubens-main">
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  <h2>Tubo de Rubens interactivo</h2>
-  <p>Las llamas reaccionan a la música en tiempo real</p>
+  html { scroll-behavior: smooth; }
 
-  <button id="playButton">ACTIVAR EXPERIMENTO</button>
+  body {
+    background: var(--void);
+    color: var(--white);
+    font-family: 'Space Grotesk', sans-serif;
+    overflow-x: hidden;
+  }
 
-  <audio id="audioElement" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.35;
+  }
 
-  <div id="tube"></div>
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    padding: 4rem 2rem;
+    overflow: hidden;
+  }
 
-</section>
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 110%, rgba(255,75,18,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 20% 50%, rgba(0,191,255,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 80% 30%, rgba(255,215,0,0.05) 0%, transparent 50%),
+      var(--void);
+    z-index: 0;
+  }
 
-<script>
+  /* Animated flame particles */
+  .particles {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+  }
 
-// CREAR LLAMAS
-const tube = document.getElementById("tube");
-const FLAMES = 60;
-let flames = [];
+  .particle {
+    position: absolute;
+    bottom: -20px;
+    width: 3px;
+    border-radius: 50%;
+    animation: rise linear infinite;
+    opacity: 0;
+  }
 
-for(let i=0;i<FLAMES;i++){
-  const f = document.createElement("div");
-  f.classList.add("flame");
-  tube.appendChild(f);
-  flames.push(f);
-}
+  @keyframes rise {
+    0%   { transform: translateY(0) scaleX(1); opacity: 0; }
+    10%  { opacity: 0.8; }
+    50%  { transform: translateY(-40vh) scaleX(1.5) translateX(20px); opacity: 0.4; }
+    100% { transform: translateY(-100vh) scaleX(0.3) translateX(-10px); opacity: 0; }
+  }
 
-// AUDIO
-const audio = document.getElementById("audioElement");
-const button = document.getElementById("playButton");
+  .hero-content { position: relative; z-index: 2; max-width: 900px; }
 
-let analyser, dataArray;
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 300;
+    letter-spacing: 0.3em;
+    color: var(--fire);
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.3s forwards;
+  }
 
-button.addEventListener("click", async () => {
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(6rem, 18vw, 14rem);
+    line-height: 0.88;
+    letter-spacing: -0.02em;
+    color: var(--white);
+    margin-bottom: 0.5rem;
+    opacity: 0;
+    animation: fadeUp 0.9s ease 0.5s forwards;
+  }
 
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  .hero-title span {
+    display: block;
+    background: linear-gradient(135deg, var(--fire) 0%, var(--ember) 40%, var(--plasma) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 
-  const src = ctx.createMediaElementSource(audio);
+  .hero-sub {
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
+    font-weight: 300;
+    color: var(--ghost);
+    line-height: 1.6;
+    max-width: 600px;
+    margin: 2rem auto 3rem;
+    opacity: 0;
+    animation: fadeUp 0.9s ease 0.8s forwards;
+  }
 
-  analyser = ctx.createAnalyser();
-  analyser.fftSize = 128;
+  .hero-badges {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeUp 0.9s ease 1s forwards;
+  }
 
-  const bufferLength = analyser.frequencyBinCount;
-  dataArray = new Uint8Array(bufferLength);
+  .badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.5rem 1.2rem;
+    border: 1px solid;
+    border-radius: 100px;
+  }
 
-  src.connect(analyser);
-  analyser.connect(ctx.destination);
+  .badge-fire { border-color: var(--fire); color: var(--fire); }
+  .badge-ether { border-color: var(--ether); color: var(--ether); }
+  .badge-gold { border-color: var(--plasma); color: var(--plasma); }
 
-  audio.play();
-});
+  .scroll-hint {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    animation: fadeUp 0.9s ease 1.5s forwards;
+  }
 
-// ANIMACIÓN
-function animate(){
-  requestAnimationFrame(animate);
+  .scroll-line {
+    width: 1px;
+    height: 50px;
+    background: linear-gradient(to bottom, var(--fire), transparent);
+    animation: pulse 2s ease-in-out infinite;
+  }
 
-  if(!analyser) return;
+  .scroll-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    color: var(--ash);
+    text-transform: uppercase;
+  }
 
-  analyser.getByteFrequencyData(dataArray);
+  @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 
-  flames.forEach((flame,i)=>{
-    const value = dataArray[i % dataArray.length];
+  /* ── SECTION BASE ── */
+  section { padding: 7rem 2rem; position: relative; }
+  .container { max-width: 1100px; margin: 0 auto; }
 
-    flame.style.height = (value*0.6)+"px";
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--fire);
+    margin-bottom: 1.5rem;
+  }
 
-    // COLORES (sales)
-    if(value < 85){
-      flame.style.background = "#00ffcc"; // cobre
-    }else if(value < 170){
-      flame.style.background = "#ff8800"; // sodio
-    }else{
-      flame.style.background = "#cc00ff"; // potasio
-    }
-  });
-}
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    line-height: 0.95;
+    letter-spacing: 0.01em;
+    margin-bottom: 2rem;
+  }
 
-animate();
+  /* ── CONCEPT SECTION ── */
+  .concept { background: var(--smoke); }
 
-</script>
+  .concept-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+
+  .concept-text p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: var(--ghost);
+    margin-bottom: 1.5rem;
+  }
+
+  .concept-text strong { color: var(--white); font-weight: 500; }
+
+  .concept-visual {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Ruben's tube SVG illustration */
+  .tube-wrap { width: 100%; max-width: 440px; }
+
+  /* ── PHYSICS SECTION ── */
+  .physics { background: var(--void); }
+
+  .physics-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 4rem;
+  }
+
+  .phys-card {
+    background: var(--smoke);
+    border: 1px solid rgba(255,75,18,0.15);
+    border-radius: 4px;
+    padding: 2.5rem 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .phys-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--fire), var(--plasma));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .phys-card:hover { border-color: rgba(255,75,18,0.4); }
+  .phys-card:hover::before { opacity: 1; }
+
+  .phys-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 5rem;
+    line-height: 1;
+    color: rgba(255,75,18,0.12);
+    position: absolute;
+    top: 1rem; right: 1.5rem;
+  }
+
+  .phys-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    display: block;
+  }
+
+  .phys-card h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--white);
+  }
+
+  .phys-card p {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--ash);
+  }
+
+  /* ── EXPERIENCE SECTION ── */
+  .experience { background: var(--smoke); overflow: hidden; }
+
+  .exp-timeline {
+    position: relative;
+    margin-top: 4rem;
+  }
+
+  .exp-timeline::before {
+    content: '';
+    position: absolute;
+    left: 28px;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--fire), transparent);
+  }
+
+  .exp-step {
+    display: flex;
+    gap: 3rem;
+    margin-bottom: 4rem;
+    align-items: flex-start;
+  }
+
+  .exp-dot {
+    width: 57px;
+    height: 57px;
+    border-radius: 50%;
+    background: var(--void);
+    border: 1px solid var(--fire);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    color: var(--fire);
+    position: relative;
+    z-index: 1;
+  }
+
+  .exp-body h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.75rem;
+  }
+
+  .exp-body p {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--ash);
+    max-width: 600px;
+  }
+
+  /* ── MARKETS ── */
+  .markets { background: var(--void); }
+
+  .markets-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-top: 4rem;
+  }
+
+  .market-card {
+    border: 1px solid var(--mist);
+    border-radius: 2px;
+    padding: 3rem 2rem 2.5rem;
+    position: relative;
+    background: transparent;
+    overflow: hidden;
+    transition: all 0.3s;
+    cursor: default;
+  }
+
+  .market-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .market-card.museo::after { background: radial-gradient(circle at 50% 100%, rgba(0,191,255,0.06), transparent 70%); }
+  .market-card.live::after  { background: radial-gradient(circle at 50% 100%, rgba(255,75,18,0.06), transparent 70%); }
+  .market-card.rave::after  { background: radial-gradient(circle at 50% 100%, rgba(255,215,0,0.06), transparent 70%); }
+
+  .market-card:hover { border-color: var(--a
 
 </body>
 </html>
