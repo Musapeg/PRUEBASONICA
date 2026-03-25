@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SÓNICA</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+
+<style>
+
+/* BASE */
+body{
+  margin:0;
+  background:#050508;
+  color:#fff;
+  font-family:'Space Grotesk', sans-serif;
+}
+
+/* HERO */
+.hero{
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+}
+
+.hero h1{
+  font-family:'Bebas Neue';
+  font-size:120px;
+  margin:0;
+  background:linear-gradient(orange,yellow);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+
+.hero p{
+  color:#aaa;
+  max-width:600px;
+}
+
+/* RUBENS */
+.rubens-main{
+  padding:60px 20px;
+  text-align:center;
+}
+
+#tube{
+  display:flex;
+  justify-content:center;
+  align-items:flex-end;
+  gap:4px;
+  height:140px;
+  margin-top:30px;
+  background:#111;
+  padding:15px;
+  border-radius:12px;
+}
+
+.flame{
+  width:6px;
+  height:20px;
+  background:orange;
+  border-radius:2px;
+  transition:all 0.1s linear;
+}
+
+/* BOTON */
+button{
+  padding:12px 25px;
+  background:orange;
+  border:none;
+  color:#000;
+  font-weight:bold;
+  cursor:pointer;
+  border-radius:6px;
+  margin-top:20px;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <h1>SÓNICA</h1>
+  <p>Una experiencia multisensorial donde la física del sonido se convierte en fuego.</p>
+</section>
+
+<!-- RUBENS -->
+<section class="rubens-main">
+
+  <h2>Tubo de Rubens interactivo</h2>
+  <p>Las llamas reaccionan a la música en tiempo real</p>
+
+  <button id="playButton">ACTIVAR EXPERIMENTO</button>
+
+  <audio id="audioElement" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+
+  <div id="tube"></div>
+
+</section>
+
+<script>
+
+// CREAR LLAMAS
+const tube = document.getElementById("tube");
+const FLAMES = 60;
+let flames = [];
+
+for(let i=0;i<FLAMES;i++){
+  const f = document.createElement("div");
+  f.classList.add("flame");
+  tube.appendChild(f);
+  flames.push(f);
+}
+
+// AUDIO
+const audio = document.getElementById("audioElement");
+const button = document.getElementById("playButton");
+
+let analyser, dataArray;
+
+button.addEventListener("click", async () => {
+
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+  const src = ctx.createMediaElementSource(audio);
+
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 128;
+
+  const bufferLength = analyser.frequencyBinCount;
+  dataArray = new Uint8Array(bufferLength);
+
+  src.connect(analyser);
+  analyser.connect(ctx.destination);
+
+  audio.play();
+});
+
+// ANIMACIÓN
+function animate(){
+  requestAnimationFrame(animate);
+
+  if(!analyser) return;
+
+  analyser.getByteFrequencyData(dataArray);
+
+  flames.forEach((flame,i)=>{
+    const value = dataArray[i % dataArray.length];
+
+    flame.style.height = (value*0.6)+"px";
+
+    // COLORES (sales)
+    if(value < 85){
+      flame.style.background = "#00ffcc"; // cobre
+    }else if(value < 170){
+      flame.style.background = "#ff8800"; // sodio
+    }else{
+      flame.style.background = "#cc00ff"; // potasio
+    }
+  });
+}
+
+animate();
+
+</script>
+
+</body>
+</html>
